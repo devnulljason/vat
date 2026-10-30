@@ -6,167 +6,6 @@ import (
 	"strings"
 )
 
-type Vector int
-
-const (
-	VectorPhysical Vector = iota
-	VectorLocal
-	VectorAdjacent
-	VectorNetwork
-)
-
-var vectorString = map[Vector]string{
-	VectorPhysical: "Physical",
-	VectorLocal:    "Local",
-	VectorAdjacent: "Adjacent",
-	VectorNetwork:  "Network",
-}
-
-var vectorValue = map[Vector]float64{
-	VectorPhysical: 0.2,
-	VectorLocal:    0.55,
-	VectorAdjacent: 0.62,
-	VectorNetwork:  0.85,
-}
-
-func (v Vector) String() string {
-	return vectorString[v]
-}
-
-func (v Vector) value() float64 {
-	return vectorValue[v]
-}
-
-type Complexity int
-
-const (
-	ComplexityHigh Complexity = iota
-	ComplexityLow
-)
-
-var complexityString = map[Complexity]string{
-	ComplexityHigh: "High",
-	ComplexityLow:  "Low",
-}
-
-var complexityValue = map[Complexity]float64{
-	ComplexityHigh: 0.44,
-	ComplexityLow:  0.77,
-}
-
-func (c Complexity) String() string {
-	return complexityString[c]
-}
-
-func (c Complexity) value() float64 {
-	return complexityValue[c]
-}
-
-type Privilege int
-
-const (
-	PrivHigh Privilege = iota
-	PrivLow
-	PrivNone
-)
-
-var privString = map[Privilege]string{
-	PrivHigh: "High",
-	PrivLow:  "Low",
-	PrivNone: "None",
-}
-
-func (p Privilege) String() string {
-	return privString[p]
-}
-
-func (p Privilege) value(s Scope) float64 {
-	if p == PrivNone {
-		return 0.85
-	}
-
-	if p == PrivLow {
-		if s == ScopeChanged {
-			return 0.68
-		}
-		return 0.62
-	}
-
-	if s == ScopeChanged {
-		return 0.5
-	}
-	return 0.27
-}
-
-type Interaction int
-
-const (
-	InteractionRequired Interaction = iota
-	InteractionNone
-)
-
-var interactionString = map[Interaction]string{
-	InteractionRequired: "Required",
-	InteractionNone:     "None",
-}
-
-var interactionValue = map[Interaction]float64{
-	InteractionRequired: 0.62,
-	InteractionNone:     0.85,
-}
-
-func (i Interaction) String() string {
-	return interactionString[i]
-}
-
-func (i Interaction) value() float64 {
-	return interactionValue[i]
-}
-
-type Scope int
-
-const (
-	ScopeUnchanged Scope = iota
-	ScopeChanged
-)
-
-var scopeString = map[Scope]string{
-	ScopeUnchanged: "Unchanged",
-	ScopeChanged:   "Changed",
-}
-
-func (s Scope) String() string {
-	return scopeString[s]
-}
-
-type Impact int
-
-const (
-	ImpactNone Impact = iota
-	ImpactLow
-	ImpactHigh
-)
-
-var impactString = map[Impact]string{
-	ImpactNone: "None",
-	ImpactLow:  "Low",
-	ImpactHigh: "High",
-}
-
-var impactValue = map[Impact]float64{
-	ImpactNone: 0,
-	ImpactLow:  0.22,
-	ImpactHigh: 0.56,
-}
-
-func (i Impact) String() string {
-	return impactString[i]
-}
-
-func (i Impact) value() float64 {
-	return impactValue[i]
-}
-
 type CVSS struct {
 	AttackVector       Vector
 	AttackComplexity   Complexity
@@ -178,9 +17,27 @@ type CVSS struct {
 	Confidentiality Impact
 	Integrity       Impact
 	Availability    Impact
+
+	ExploitMaturity  Maturity
+	RemediationLevel Remediation
+	ReportConfidence Confidence
+
+	ConfidentialityRequirement ImpactRequirement
+	IntegrityRequirement       ImpactRequirement
+	AvailabilityRequirement    ImpactRequirement
+	ModifiedAttackVector       ModifiedVector
+	ModifiedAttackComplexity   ModifiedComplexity
+	ModifiedPrivilegesRequired ModifiedPrivilege
+	ModifiedUserInteraction    ModifiedInteraction
+	ModifiedScope              ModifiedScope
+	ModifiedConfidentiality    ModifiedImpact
+	ModifiedIntegrity          ModifiedImpact
+	ModifiedAvailability       ModifiedImpact
 }
 
-const cvss3_1Header = "CVSS:3.1"
+func (c CVSS) EnvironmentalScore() float64 {
+	return c.Score()
+}
 
 func (c CVSS) Score() float64 {
 	iss := 1 - ((1 - c.Confidentiality.value()) * (1 - c.Integrity.value()) * (1 - c.Availability.value()))
@@ -203,9 +60,11 @@ func (c CVSS) Score() float64 {
 	return roundup(math.Min(imp+exp, 10.0))
 }
 
+const cvss31Header = "CVSS:3.1"
+
 func (c CVSS) String() string {
 	var vec strings.Builder
-	vec.WriteString(cvss3_1Header)
+	vec.WriteString(cvss31Header)
 
 	fmt.Fprintf(&vec, "/AV:%.1s", c.AttackVector)
 	fmt.Fprintf(&vec, "/AC:%.1s", c.AttackComplexity)
@@ -216,7 +75,60 @@ func (c CVSS) String() string {
 	fmt.Fprintf(&vec, "/I:%.1s", c.Integrity)
 	fmt.Fprintf(&vec, "/A:%.1s", c.Availability)
 
+	if c.ExploitMaturity != MatNotDefined {
+		fmt.Fprintf(&vec, "/E:%.1s", c.ExploitMaturity)
+	}
+	if c.RemediationLevel != RemNotDefined {
+		fmt.Fprintf(&vec, "/RL:%.1s", c.RemediationLevel)
+	}
+	if c.ReportConfidence != ConNotDefined {
+		fmt.Fprintf(&vec, "/RC:%.1s", c.ReportConfidence)
+	}
+
+	if c.ConfidentialityRequirement != ImpReqNotDefined {
+		fmt.Fprintf(&vec, "/CR:%.1s", c.ConfidentialityRequirement)
+	}
+	if c.IntegrityRequirement != ImpReqNotDefined {
+		fmt.Fprintf(&vec, "/IR:%.1s", c.IntegrityRequirement)
+	}
+	if c.AvailabilityRequirement != ImpReqNotDefined {
+		fmt.Fprintf(&vec, "/AR:%.1s", c.AvailabilityRequirement)
+	}
+	if c.ModifiedAttackVector != ModVecNotDefined {
+		fmt.Fprintf(&vec, "/MAV:%.1s", c.ModifiedAttackVector)
+	}
+	if c.ModifiedAttackComplexity != ModCompNotDefined {
+		fmt.Fprintf(&vec, "/MAC:%.1s", c.ModifiedAttackComplexity)
+	}
+	if c.ModifiedPrivilegesRequired != ModPrivNotDefined {
+		fmt.Fprintf(&vec, "/MPR:%.1s", c.ModifiedPrivilegesRequired)
+	}
+	if c.ModifiedUserInteraction != ModIntNotDefined {
+		fmt.Fprintf(&vec, "/MUI:%.1s", c.ModifiedUserInteraction)
+	}
+	if c.ModifiedScope != ModScopeNotDefined {
+		fmt.Fprintf(&vec, "/MS:%.1s", c.ModifiedScope)
+	}
+	if c.ModifiedConfidentiality != ModImpactNotDefined {
+		fmt.Fprintf(&vec, "/MC:%.1s", c.ModifiedConfidentiality)
+	}
+	if c.ModifiedIntegrity != ModImpactNotDefined {
+		fmt.Fprintf(&vec, "/MI:%.1s", c.ModifiedIntegrity)
+	}
+	if c.ModifiedAvailability != ModImpactNotDefined {
+		fmt.Fprintf(&vec, "/MA:%.1s", c.ModifiedAvailability)
+	}
+
 	return vec.String()
+}
+
+func (c CVSS) TemporalScore() float64 {
+	base := c.Score()
+	exp := c.ExploitMaturity.value()
+	rem := c.RemediationLevel.value()
+	con := c.ReportConfidence.value()
+
+	return roundup(base * exp * rem * con)
 }
 
 func roundup(x float64) float64 {
