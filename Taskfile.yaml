@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+version: "3"
+
+tasks:
+  build:
+    cmd: go build -o build/vat .
+
+  doc:
+    cmd: go doc -http .
+
+  fmt:
+    cmd: golangci-lint fmt --diff-colored
+
+  lint:
+    cmd: golangci-lint run
+
+  run:
+    deps: [build]
+    dir: build
+    cmd: ./vat
+
+  test:
+    cmd: go test -v -cover ./...
+
+  vuln:
+    cmd: govulncheck -show color ./...
