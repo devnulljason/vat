@@ -1,162 +1,113 @@
 package main
 
-type Vector int
+type metric int
 
 const (
-	VectorPhysical Vector = iota
-	VectorLocal
-	VectorAdjacent
-	VectorNetwork
+	notDefined metric = iota
+
+	network
+	adjacent
+	local
+	physical
+
+	high
+	low
+	none
+
+	required
+
+	unchanged
+	changed
 )
 
-var vectorString = map[Vector]string{
-	VectorPhysical: "Physical",
-	VectorLocal:    "Local",
-	VectorAdjacent: "Adjacent",
-	VectorNetwork:  "Network",
+var metricString = map[metric]string{
+	notDefined: "Not Defined",
+
+	network:  "Network",
+	adjacent: "Adjacent",
+	local:    "Local",
+	physical: "Physical",
+
+	high: "High",
+	low:  "Low",
+	none: "None",
+
+	required: "Required",
+
+	unchanged: "Unchanged",
+	changed:   "Changed",
 }
 
-var vectorValue = map[Vector]float64{
-	VectorPhysical: 0.2,
-	VectorLocal:    0.55,
-	VectorAdjacent: 0.62,
-	VectorNetwork:  0.85,
+func (m metric) String() string {
+	return metricString[m]
 }
 
-func (v Vector) String() string {
-	return vectorString[v]
-}
-
-func (v Vector) value() float64 {
-	return vectorValue[v]
-}
-
-type Complexity int
+type vector metric
 
 const (
-	ComplexityHigh Complexity = iota
-	ComplexityLow
+	VectorNetwork  = vector(network)
+	VectorAdjacent = vector(adjacent)
+	VectorLocal    = vector(local)
+	VectorPhysical = vector(physical)
 )
 
-var complexityString = map[Complexity]string{
-	ComplexityHigh: "High",
-	ComplexityLow:  "Low",
+func (v vector) String() string {
+	return metric(v).String()
 }
 
-var complexityValue = map[Complexity]float64{
-	ComplexityHigh: 0.44,
-	ComplexityLow:  0.77,
-}
-
-func (c Complexity) String() string {
-	return complexityString[c]
-}
-
-func (c Complexity) value() float64 {
-	return complexityValue[c]
-}
-
-type Privilege int
+type complexity metric
 
 const (
-	PrivHigh Privilege = iota
-	PrivLow
-	PrivNone
+	ComplexityLow  = complexity(low)
+	ComplexityHigh = complexity(high)
 )
 
-var privString = map[Privilege]string{
-	PrivHigh: "High",
-	PrivLow:  "Low",
-	PrivNone: "None",
+func (c complexity) String() string {
+	return metric(c).String()
 }
 
-func (p Privilege) String() string {
-	return privString[p]
-}
-
-func (p Privilege) value(s Scope) float64 {
-	if p == PrivNone {
-		return 0.85
-	}
-
-	if p == PrivLow {
-		if s == ScopeChanged {
-			return 0.68
-		}
-		return 0.62
-	}
-
-	if s == ScopeChanged {
-		return 0.5
-	}
-	return 0.27
-}
-
-type Interaction int
+type privilege metric
 
 const (
-	InteractionRequired Interaction = iota
-	InteractionNone
+	PrivHigh = privilege(high)
+	PrivLow  = privilege(low)
+	PrivNone = privilege(none)
 )
 
-var interactionString = map[Interaction]string{
-	InteractionRequired: "Required",
-	InteractionNone:     "None",
+func (p privilege) String() string {
+	return metric(p).String()
 }
 
-var interactionValue = map[Interaction]float64{
-	InteractionRequired: 0.62,
-	InteractionNone:     0.85,
-}
-
-func (i Interaction) String() string {
-	return interactionString[i]
-}
-
-func (i Interaction) value() float64 {
-	return interactionValue[i]
-}
-
-type Scope int
+type interaction metric
 
 const (
-	ScopeUnchanged Scope = iota
-	ScopeChanged
+	InteractionRequired = interaction(required)
+	InteractionNone     = interaction(none)
 )
 
-var scopeString = map[Scope]string{
-	ScopeUnchanged: "Unchanged",
-	ScopeChanged:   "Changed",
+func (i interaction) String() string {
+	return metric(i).String()
 }
 
-func (s Scope) String() string {
-	return scopeString[s]
-}
-
-type Impact int
+type scope metric
 
 const (
-	ImpactNone Impact = iota
-	ImpactLow
-	ImpactHigh
+	ScopeUnchanged = scope(unchanged)
+	ScopeChanged   = scope(changed)
 )
 
-var impactString = map[Impact]string{
-	ImpactNone: "None",
-	ImpactLow:  "Low",
-	ImpactHigh: "High",
+func (s scope) String() string {
+	return metric(s).String()
 }
 
-var impactValue = map[Impact]float64{
-	ImpactNone: 0,
-	ImpactLow:  0.22,
-	ImpactHigh: 0.56,
-}
+type impact metric
 
-func (i Impact) String() string {
-	return impactString[i]
-}
+const (
+	ImpactNone = impact(none)
+	ImpactLow  = impact(low)
+	ImpactHigh = impact(high)
+)
 
-func (i Impact) value() float64 {
-	return impactValue[i]
+func (i impact) String() string {
+	return metric(i).String()
 }
