@@ -3,12 +3,21 @@ version: "3"
 
 tasks:
   build:
-    cmd: go build -o build/vat .
+    sources:
+      - "**/*.go"
+      - go.mod
+      - go.sum
+      - exclude: "**/*_test.go"
+    generates:
+      - build/vat{{exeExt}}
+    cmd: go build -o build/vat{{exeExt}} .
 
   doc:
-    cmd: go doc -http .
+    cmd: go doc -http
 
-  fmt:
+  format:
+    aliases:
+      - fmt
     cmd: golangci-lint fmt --diff-colored
 
   lint:
@@ -17,10 +26,10 @@ tasks:
   run:
     deps: [build]
     dir: build
-    cmd: ./vat
+    cmd: ./vat{{exeExt}}
 
   test:
-    cmd: go test -v -cover ./...
+    cmd: go tool gotestsum --format=testdox --format-icons=octicons
 
-  vuln:
-    cmd: govulncheck -show color ./...
+  vulncheck:
+    cmd: go tool govulncheck -show=color ./...

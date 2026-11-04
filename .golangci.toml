@@ -12,6 +12,7 @@ enable = [
   "misspell",
   "modernize",
   "nakedret",
+  "paralleltest",
 ]
 
 [linters.exclusions]
